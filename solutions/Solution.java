@@ -1,8 +1,8 @@
 package solutions;
 import java.util.Stack;
 
-class Solution {
-    public boolean isValid(String s) {
+public class Solution {
+    public static boolean isValid(String s) {
         // Stack to store opening brackets
         Stack<Character> stack = new Stack<>();
         // Loop through the characters in the string
