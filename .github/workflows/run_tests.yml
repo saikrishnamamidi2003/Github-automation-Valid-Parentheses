@@ -1,0 +1,91 @@
+name: Run Code Tests
+
+on:
+  push:
+    paths:
+      - "solutions/**"
+  pull_request:
+    paths:
+      - "tests/**"
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Ensure previous commit is available
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y gcc g++ openjdk-17-jdk python3
+
+      - name: Detect Changed Files
+        id: changed-files
+        run: |
+          BEFORE_COMMIT="${{ github.event.before }}"
+          if [ -z "$BEFORE_COMMIT" ] || ! git cat-file -e "$BEFORE_COMMIT"^{commit}; then
+            BEFORE_COMMIT=$(git rev-parse HEAD~1)  # Use last commit as fallback
+          fi
+          
+          CHANGED_FILES=$(git diff --name-only "$BEFORE_COMMIT" HEAD)
+          echo "Detected changed files: $CHANGED_FILES"
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No file changes detected. Exiting..."
+            exit 1
+          fi
+
+          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+
+      - name: Determine File Type
+        id: determine-file
+        run: |
+          if echo "$CHANGED_FILES" | grep -qE '\.c$'; then
+            echo "language=C" >> $GITHUB_ENV
+          elif echo "$CHANGED_FILES" | grep -qE '\.cpp$'; then
+            echo "language=C++" >> $GITHUB_ENV
+          elif echo "$CHANGED_FILES" | grep -qE '\.py$'; then
+            echo "language=Python" >> $GITHUB_ENV
+          elif echo "$CHANGED_FILES" | grep -qE '\.java$'; then
+            echo "language=Java" >> $GITHUB_ENV
+          else
+            echo "No relevant file changes detected. Exiting..."
+            exit 1
+          fi
+
+      - name: Compile and Run C Program
+        if: ${{ env.language == 'C' }}
+        run: |
+          gcc tests/test.c -o solution_c
+          ./solution_c
+
+      - name: Compile and Run C++ Program
+        if: ${{ env.language == 'C++' }}
+        run: |
+          g++ -I. tests/test.cpp solutions/*.cpp -o solution_cpp
+          ./solution_cpp
+
+      - name: Run Python Program
+        if: ${{ env.language == 'Python' }}
+        run: |
+          PYTHON_FILE=$(ls solutions/*.py 2>/dev/null | head -n 1)
+
+          if [ -z "$PYTHON_FILE" ]; then
+            echo "Error: No Python script found in solutions/ directory!"
+            exit 1
+          fi
+          
+          echo "Executing Python script: $PYTHON_FILE"
+          # python3 "$PYTHON_FILE" < tests/test.py
+          python -m tests.test
+      - name: Run Java Tests
+        if: ${{ env.language == 'Java' }}
+        run: |
+          if ls tests/Test.java 1> /dev/null 2>&1; then
+            javac -d . solutions/*.java tests/*.java && java tests.Test
+          else
+            echo "Java test file not found."
+          fi
