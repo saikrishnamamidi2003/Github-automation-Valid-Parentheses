@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-
+ 
 bool isValid(char * s) {
     char stack[strlen(s)];
     int top = -1;
