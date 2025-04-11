@@ -10,7 +10,7 @@ public:
         stack<char> st; // Stack for opening brackets
         unordered_map<char, char> hash = {{')', '('}, {']', '['}, {'}', '{'}};
         
-        for (char c : s) {
+        for (char c : s) { 
             if (hash.count(c)) { // If c is a closing bracket
                 if (!st.empty() && st.top() == hash[c]) {
                     st.pop(); // Pop the matching opening bracket
