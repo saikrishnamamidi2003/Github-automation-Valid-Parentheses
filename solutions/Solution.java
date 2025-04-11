@@ -1,4 +1,4 @@
-package solutions;
+package solutions; 
 import java.util.Stack;
 
 class Solution {
